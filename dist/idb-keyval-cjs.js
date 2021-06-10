@@ -19,12 +19,15 @@ var Store = /** @class */ (function () {
     }
     Store.prototype._withIDBStore = function (type, callback) {
         var _this = this;
-        return this._dbp.then(function (db) { return new Promise(function (resolve, reject) {
+        var original = this._dbp.then(function (db) { return new Promise(function (resolve, reject) {
             var transaction = db.transaction(_this.storeName, type);
             transaction.oncomplete = function () { return resolve(); };
             transaction.onabort = transaction.onerror = function () { return reject(transaction.error); };
             callback(transaction.objectStore(_this.storeName));
         }); });
+        return Promise.race([original, new Promise(function (rs, rj) { return setTimeout(function () {
+                rj(new Error('idb init failed.'));
+            }, 5e3); })]);
     };
     return Store;
 }());

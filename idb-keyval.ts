@@ -15,12 +15,15 @@ export class Store {
   }
 
   _withIDBStore(type: IDBTransactionMode, callback: ((store: IDBObjectStore) => void)): Promise<void> {
-    return this._dbp.then(db => new Promise<void>((resolve, reject) => {
+    const original= this._dbp.then(db => new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(this.storeName, type);
       transaction.oncomplete = () => resolve();
       transaction.onabort = transaction.onerror = () => reject(transaction.error);
       callback(transaction.objectStore(this.storeName));
     }));
+    return Promise.race([original, new Promise<void>((rs, rj) => setTimeout(() => {
+      rj(new Error('idb init failed.'))
+    }, 5e3))])
   }
 }
 
